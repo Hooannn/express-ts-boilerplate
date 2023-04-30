@@ -4,10 +4,13 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import hpp from 'hpp';
+import multer from 'multer';
+import morgan from 'morgan';
 // import { connect, set } from 'mongoose';
-import { NODE_ENV, ORIGIN, CREDENTIALS, PORT } from './config/index';
+import { NODE_ENV, ORIGIN, CREDENTIALS, PORT, LOG_FORMAT } from './config/index';
 // import { dbConnection } from './databases/index';
 import { Routes } from './interfaces/routes.interface';
+import { logger, stream } from '@utils/logger';
 import errorMiddleware from './middlewares/error.middleware';
 
 class App {
@@ -28,10 +31,10 @@ class App {
 
   public listen() {
     this.app.listen(this.port, () => {
-      console.log(`=================================`);
-      console.log(`======= ENV: ${this.env} =======`);
-      console.log(`🚀 App listening on the port ${this.port}`);
-      console.log(`=================================`);
+      logger.info(`=================================`);
+      logger.info(`======= ENV: ${this.env} =======`);
+      logger.info(`🚀 App listening on the port ${this.port}`);
+      logger.info(`=================================`);
     });
   }
 
@@ -40,12 +43,18 @@ class App {
   }
 
   private connectToDatabase() {
-    console.log("connectToDatabase() has't implemented yet");
+    logger.info("connectToDatabase() has't implemented yet");
   }
 
   private initializeMiddlewares() {
+    const memoryStorage = multer.memoryStorage();
+    const upload = multer({
+      storage: memoryStorage,
+    });
+    this.app.use(morgan(LOG_FORMAT, { stream }));
     this.app.use(cors({ origin: ORIGIN, credentials: CREDENTIALS }));
     this.app.use(hpp());
+    this.app.use(upload.array('file'));
     this.app.use(helmet());
     this.app.use(compression());
     this.app.use(express.json());
